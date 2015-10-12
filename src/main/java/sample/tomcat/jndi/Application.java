@@ -20,8 +20,8 @@ import javax.naming.NamingException;
 import javax.sql.DataSource;
 
 import org.apache.catalina.Context;
-import org.apache.catalina.deploy.ContextResource;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.tomcat.util.descriptor.web.ContextResource;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainer;
@@ -29,15 +29,17 @@ import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletCon
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportResource;
 import org.springframework.jndi.JndiObjectFactoryBean;
 
 @Configuration
 @ComponentScan
 @EnableAutoConfiguration
-public class SampleTomcatJndiApplication {
+@ImportResource("classpath:context/applicationContext.xml")
+public class Application {
 
 	public static void main(String[] args) {
-		SpringApplication.run(SampleTomcatJndiApplication.class, args);
+		SpringApplication.run(Application.class, args);
 	}
 
 	@Bean
@@ -54,20 +56,25 @@ public class SampleTomcatJndiApplication {
 			@Override
 			protected void postProcessContext(Context context) {
 				ContextResource resource = new ContextResource();
-				resource.setName("jdbc/myDataSource");
-				resource.setType(DataSource.class.getName());
-				resource.setProperty("driverClassName", "your.db.Driver");
+				resource.setName("jdbc/CMSDataSource");
+				resource.setProperty("global", "jdbc/MYDataSource");
+				resource.setType("javax.sql.DataSource");
+				resource.setProperty("driverClassName", "oracle.jdbc.driver.OracleDriver");
 				resource.setProperty("url", "jdbc:yourDb");
+				resource.setAuth("Container");
 
 				context.getNamingResources().addResource(resource);
+				
+				System.out.println("\n\n\ncontext naming resources\n"+context.getResourceOnlyServlets()+"\n\n\n");
 			}
 		};
 	}
 
 	@Bean(destroyMethod="")
 	public DataSource jndiDataSource() throws IllegalArgumentException, NamingException {
+		System.out.println("\n\n\nIn jndiDataSource\n\n\n");
 		JndiObjectFactoryBean bean = new JndiObjectFactoryBean();
-		bean.setJndiName("java:comp/env/jdbc/myDataSource");
+		bean.setJndiName("jdbc/MYDataSource");
 		bean.setProxyInterface(DataSource.class);
 		bean.setLookupOnStartup(false);
 		bean.afterPropertiesSet();
